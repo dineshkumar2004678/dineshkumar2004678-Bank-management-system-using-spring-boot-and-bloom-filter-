@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking System</title>
+    <!-- Prevent favicon requests from causing errors -->
+    <link rel="icon" href="data:,">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --success-color: #2ecc71;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+        }
+        
+        .btn-danger {
+            background-color: var(--accent-color);
+            border: none;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            border: none;
+        }
+        
+        .operation-section {
+            background-color: var(--light-color);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .account-details {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .transaction-history {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .bloom-filter-indicator {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background-color: #f8f9fa;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .positive {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .negative {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .balance-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 350px;
+        }
+        
+        .alert {
+            animation: fadeIn 0.5s, fadeOut 0.5s 2.5s forwards;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; visibility: hidden; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#" th:href="@{/}">
+                <i class="fas fa-university me-2"></i>Banking System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" th:href="@{/}"><i class="fas fa-home me-1"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-info-circle me-1"></i> About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-envelope me-1"></i> Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Alert Container -->
+        <div class="alert-container">
+            <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <span th:text="${message}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span th:text="${error}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Left Column - Account Operations -->
+            <div class="col-md-6">
+                <!-- Create Account -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Create New Account</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Change this line -->
+<form th:action="@{/accounts}" th:object="${account}" method="post">
+                            <div class="mb-3">
+                                <label for="accountHolder" class="form-label">Account Holder Name</label>
+                                <input type="text" class="form-control" id="accountHolder" 
+                                       th:field="*{account_holder}" placeholder="Account Holder Name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="initialDeposit" class="form-label">Initial Deposit ($)</label>
+                                <input type="number" class="form-control" id="initialDeposit" 
+                                       th:field="*{balance}" placeholder="Initial Deposit" min="0" step="0.01" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Account Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Account Operations</h5>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/accounts/details}" method="get" class="mb-3">
+                            <div class="mb-3">
+                                <label for="accountNumber" class="form-label">Account Number</label>
+                                <input type="number" class="form-control" id="accountNumber" 
+                                       name="accountNumber" placeholder="Account Number" required
+                                       oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                            </div>
+                            <button type="submit" class="btn btn-info w-100 mb-3">
+                                <i class="fas fa-search me-2"></i>Get Account Details
+                            </button>
+                        </form>
+                        
+                        <div th:if="${accountDetails}" class="operation-section">
+                            <h6>Transaction</h6>
+                            <form th:action="@{/accounts/deposit}" method="post" class="mb-2">
+                                <input type="hidden" name="accountNumber" th:value="${accountDetails.account_number}">
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="amount" 
+                                           placeholder="Amount" step="0.01" min="0.01" required>
+                                    <button class="btn btn-success" type="submit">
+                                        <i class="fas fa-arrow-down me-1"></i>Deposit
+                                    </button>
+                                </div>
+                            </form>
+                            <form th:action="@{/accounts/withdraw}" method="post" class="mb-3">
+                                <input type="hidden" name="accountNumber" th:value="${accountDetails.account_number}">
+                                <div class="input-group">
+                                    <input type="number" class="form-control" name="amount" 
+                                           placeholder="Amount" step="0.01" min="0.01" required>
+                                    <button class="btn btn-warning" type="submit">
+                                        <i class="fas fa-arrow-up me-1"></i>Withdraw
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <form th:action="@{/accounts/close}" method="post">
+                                <input type="hidden" name="accountNumber" th:value="${accountDetails.account_number}">
+                                <button class="btn btn-danger w-100" type="submit" 
+                                        onclick="return confirm('Are you sure you want to close this account?')">
+                                    <i class="fas fa-times-circle me-2"></i>Close Account
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Account Details -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Account Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:unless="${accountDetails}" class="text-center py-4">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Enter an account number and click "Get Account Details" to view information</p>
+                        </div>
+                        
+                        <div th:if="${accountDetails}" id="accountDetails">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 th:text="${accountDetails.account_holder}">Account Holder Name</h4>
+                                <span class="bloom-filter-indicator positive">
+                                    <i class="fas fa-check-circle me-1"></i>Bloom Filter Verified
+                                </span>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <strong>Account Number:</strong>
+                                    <p th:text="${accountDetails.account_number}" class="mb-0">1234567890</p>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Status:</strong>
+                                    <p class="mb-0">Active</p>
+                                </div>
+                            </div>
+                            
+                            <div class="balance-display py-3 text-center mb-3">
+                                <div>Current Balance</div>
+                                <div th:text="'$' + ${#numbers.formatDecimal(accountDetails.balance, 1, 2)}">$0.00</div>
+                            </div>
+                            
+                            <h5 class="mt-4"><i class="fas fa-history me-2"></i>Transaction History</h5>
+                            <div class="transaction-history">
+                                <div class="list-group">
+                                    <!-- Sample transactions (in a real app, these would come from the backend) -->
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>Initial Deposit</strong>
+                                            <div class="text-muted small" th:text="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd HH:mm')}">2023-10-15 14:30</div>
+                                        </div>
+                                        <span class="text-success" th:text="'+$' + ${#numbers.formatDecimal(accountDetails.balance, 1, 2)}">+$1000.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-close alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+            
+            // Clear URL parameters to prevent message repetition on refresh
+            if (window.history.replaceState && (window.location.search.includes('message=') || window.location.search.includes('error='))) {
+                const cleanUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+            
+            // Add input validation to prevent non-numeric input
+            const accountNumberInput = document.getElementById('accountNumber');
+            if (accountNumberInput) {
+                accountNumberInput.addEventListener('input', function(e) {
+                    // Remove any non-numeric characters
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
